@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-# Activate virtual environment
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+
 source .venv/bin/activate || exit 1
 
 # Colors for terminal background (ANSI OSC 11)

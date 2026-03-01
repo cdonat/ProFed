@@ -46,11 +46,12 @@ def run(config: Dict[str, Any]) -> None:
     if main is None:
         raise IndexError("No components to run configured")
 
+    main_component = Component(main)
     components = [Component(name) for name in components]
     processes = [Process(component, config.get(component.name, {}))
                  for component in components]
 
-    Component(main)(config[main])
+    main_component(config[main])
 
     for p in processes:
         p.wait()

@@ -40,9 +40,7 @@ class parse_list:
         parsers = {}
         newfound = set()
         for component in runlist:
-            parse_fn = self._find_parse(component)
-            if parse_fn is None:
-                continue
+            parse_fn = self._find_parse(component) or (lambda cfg: cfg)
             expected = self._extract_expected_sections(parse_fn)
 
             newfound = newfound | set(expected)
@@ -58,8 +56,8 @@ class parse_list:
             called = set()
             for p in to_call_parsers:
                 parse_fn, expected = self.parsers[p]
-                if all(n in parsed for n in expected):
-                    parsed[p] = parse_fn(raw[p], **{arg: parsed[arg] for arg in expected})
+                if all(arg in parsed for arg in expected):
+                    parsed[p] = parse_fn(raw.get(p, {}), **{arg: parsed[arg] for arg in expected})
                     called.add(p)
             if not called:
                 raise ConfigError(f"Circular or missing dependency in config sections: {to_call_parsers}")

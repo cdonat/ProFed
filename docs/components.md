@@ -22,7 +22,7 @@ Components themselves focus only on their domain logic.
 A component is a Python package located under:
 
 ```
-src/profed/adapters/
+src/profed/components/
 ```
 
 Each component package must follow a defined structure and naming
@@ -31,7 +31,7 @@ conventions so that the framework can discover and start it.
 Example:
 
 ```
-src/profed/adapters/example_component/
+src/profed/components/example_component/
 ├── __init__.py
 └── config/
     └── __init__.py
@@ -63,7 +63,7 @@ def ExampleComponent(cfg):
 Fully qualified name:
 
 ```
-profed.adapters.example_component.ExampleComponent()
+profed.components.example_component.ExampleComponent()
 ```
 
 The `cfg` parameter contains the parsed configuration object for this
@@ -87,7 +87,7 @@ Each component may optionally provide a configuration parser.
 Location:
 
 ```
-profed.adapters.<component>.config.parse
+profed.components.<component>.config.parse
 ```
 
 Signature:
@@ -134,7 +134,7 @@ url = https://example.org
 This section maps to:
 
 ```
-profed.adapters.example_component
+profed.components.example_component
 ```
 
 ---
@@ -149,19 +149,19 @@ For each configuration section:
 1. The framework searches for a matching package in:
 
 ```
-profed.adapters.<section_name>
+profed.components.<section_name>
 ```
 
 2. The framework tries to call (optional):
 
 ```
-profed.adapters.<section_name>.config.parse()
+profed.components.<section_name>.config.parse()
 ```
 
 3. The framework calls the component entry function:
 
 ```
-profed.adapters.<section_name>.<PascalCaseName>()
+profed.components.<section_name>.<PascalCaseName>()
 ```
 
 If any of these steps fail, startup aborts with an error.
@@ -236,7 +236,7 @@ A valid component consists of:
 
 Required:
 
-- package under `profed.adapters`
+- package under `profed.components`
 - PascalCase entry function
 
 Optional:

@@ -27,7 +27,7 @@ class parse_list:
 
     def _find_parse(self, component: str):
         try:
-            mod = __import__(f"profed.adapters.{component}.config", fromlist=["parse"])
+            mod = __import__(f"profed.components.{component}.config", fromlist=["parse"])
             return getattr(mod, "parse", None)
         except ImportError:
             return None

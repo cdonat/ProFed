@@ -9,8 +9,8 @@ from profed.core.component_manager import run, Component, Process
 
 @fixture
 def mock_module():
-    mod = ModuleType("profed.adapters.example")
-    sys.modules["profed.adapters.example"] = mod
+    mod = ModuleType("profed.components.example")
+    sys.modules["profed.components.example"] = mod
     exec("async def Example(cfg):\n"
          "    assert(cfg[\"foo\"] == \"bar\")\n",
          mod.__dict__)

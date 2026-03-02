@@ -72,8 +72,8 @@ def test_command_line_override_environment():
 
 
 def test_component_parser():
-    mod = ModuleType("profed.adapters.example.config")
-    sys.modules["profed.adapters.example.config"] = mod
+    mod = ModuleType("profed.components.example.config")
+    sys.modules["profed.components.example.config"] = mod
     exec("def parse(cfg):\n"
          "    cfg['foo'] = \"blub\"\n"
          "    return cfg\n",

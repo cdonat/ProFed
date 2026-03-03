@@ -5,7 +5,6 @@ import os
 import sys
 from typing import Dict
 from types import ModuleType
-import asyncio
 
 from pytest import fixture
 

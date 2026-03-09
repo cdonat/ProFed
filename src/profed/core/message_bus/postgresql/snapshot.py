@@ -43,3 +43,14 @@ class SnapshotPublisher:
                 await self._conn.execute(f"NOTIFY {self._schema}_{self._topic}_snapshot")
         finally:
             await self._context.__aexit__(exc_type, exc, tb)
+
+
+async def last_snapshot(pool: Pool, schema: str, topic: str):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(f"""
+                                  SELECT last_event_id, snapshot
+                                  FROM {schema}.{topic}_snapshots
+                                  ORDER BY last_event_id DESC
+                                  LIMIT 1
+                                  """)
+        return (row["last_seen"], row["snapshot"]) if row else (0, None)

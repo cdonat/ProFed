@@ -4,7 +4,7 @@
 from typing import Dict, AsyncGenerator
 from asyncpg import Pool
 from .publisher import Publisher
-from .snapshot import SnapshotPublisher
+from .snapshot import SnapshotPublisher, last_snapshot
 from .subscriber import subscribe
 
 class Topic:
@@ -22,3 +22,6 @@ class Topic:
 
     def subscribe(self) -> AsyncGenerator[Dict[str, str], None]:
         return subscribe(self._pool, self._config, self._name, self._component_name)
+
+    def last_snapshot(self):
+        return last_snapshot(self._pool, self._config["schema"], self._name)

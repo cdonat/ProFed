@@ -11,6 +11,8 @@ authors = [
 
 dependencies = [
     "asyncpg>=0.29",
+    "fastapi",
+    "uvicorn",
 ]
 
 classifiers = [
@@ -29,6 +31,7 @@ profed = "profed:main"
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "httpx",
     "ruff>=0.4",
     "mypy>=1.8"
 ]

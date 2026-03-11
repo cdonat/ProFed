@@ -8,7 +8,7 @@ from asyncpg import Pool, Connection
 MIN_WAIT = 0.05
 MAX_WAIT = 2.0
 
-def subscribe(pool: Pool, config: Dict[str, str], topic: str, component_name: str) \
+def subscribe(pool: Pool, config: Dict[str, str], topic: str, component_name: str, last_seen: int) \
         -> AsyncGenerator[Dict[str, Any], None]:
     min_wait = float(config.get("minimum_message_wait", MIN_WAIT))
     max_wait = float(config.get("maximum_message_wait", MAX_WAIT))
@@ -98,8 +98,7 @@ def subscribe(pool: Pool, config: Dict[str, str], topic: str, component_name: st
             last_seen = gap_id
         return last_seen
 
-    async def read_messages() -> AsyncGenerator[Dict[str, Any], None]:
-        last_seen: int = 0
+    async def read_messages(last_seen) -> AsyncGenerator[Dict[str, Any], None]:
         wait: float = min_wait
         async with pool.acquire() as conn:
             await _ensure_gap_table(conn)
@@ -127,4 +126,4 @@ def subscribe(pool: Pool, config: Dict[str, str], topic: str, component_name: st
 
                 last_seen = await _accept_gaps(conn, last_seen, config, topic, component_name)
 
-    return read_messages()
+    return read_messages(last_seen)

@@ -4,13 +4,20 @@
 from fastapi import FastAPI
 from .routers import well_known #, actor, inbox, outbox
 
-def create_app(config, message_bus):
+def create_app(config):
 
     app = FastAPI()
 
-    app.include_router(well_known.router)
-#    app.include_router(actor.router)
-#    app.include_router(inbox.router)
-#    app.include_router(outbox.router)
+    deactive_routers = config.get("deactive_routers", "").split()
+    init_routers = [rt
+                    for name, rt in (("well_known", well_known.router),
+                                       # ("actor", actor.router),
+                                       # ("inbox", inbox.router),
+                                       # ("outbox", outbox.router),
+                                       )
+                    if name not in deactive_routers]
+    
+    for rt in init_routers:
+        app.include_router(rt)
 
     return app

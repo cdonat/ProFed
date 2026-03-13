@@ -2,17 +2,26 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from fastapi import APIRouter, HTTPException, Query
-from profed.components.api.services.webfinger import resolve_webfinger
+from profed.components.api.services.webfinger import resolve_actor_url
 
 
 router = APIRouter()
 
 @router.get("/.well-known/webfinger")
 async def webfinger(resource: str = Query(pattern=r"^acct:[^@]+@[^@]+$")):
-    result = await resolve_webfinger(resource.split(":")[1])
+    acct = resource.split(":")[1]
+    try:
+        actor_url = await resolve_actor_url(acct)
+        if actor_url is None:
+            raise HTTPException(status_code=404)
 
-    if result is None:
-        raise HTTPException(status_code=404)
-
-    return result
+        return ({"subject": f"acct:{acct}",
+                 "links": [{"rel": "self",
+                            "type": "application/activity+json",
+                            "href": actor_url}]}
+                if actor_url is not None else None)
+    except HTTPException:
+        raise
+    except:
+        raise HTTPException(status_code=500)
 

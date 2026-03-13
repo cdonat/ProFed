@@ -7,19 +7,25 @@ from profed.components.api.storage import webfinger_storage
 
 last_seen = 0
 
+async def _unknown_message_type(_1, _2):
+    pass
+
 async def webfinger_handle_user_events() -> None:
     global last_seen
 
     wf_storage = await webfinger_storage() 
+    print(wf_storage)
 
     async for event in message_bus().topic("users").subscribe():
         event_type = event.get("type")
         data = event["payload"]
+        print(event_type, data)
 
-        await {"Created": wf_storage.add,
-               "Deleted": wf_storage.delete,
-               "Update":  wf_storage.update}[event_type](data["acct"],
-                                                         data.get("actor_url", None))
+        await {"created": wf_storage.add,
+               "deleted": wf_storage.delete,
+               "updated": wf_storage.update}.get(event_type,
+                                                 _unknown_message_type)(data.get("acct", None),
+                                                                        data.get("actor_url", None))
 
 
 async def rebuild_webfinger_projection() -> None:

@@ -1,0 +1,117 @@
+# Copyright (C) 2026 Christof Donat
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+import pytest
+from functools import wraps
+from unittest.mock import AsyncMock, Mock
+from profed.components.api import projections, storage
+import profed.core.message_bus
+
+
+class FakeTopic:
+    def __init__(self):
+        self.last_seen = 0
+        self.snapshots = []
+        self.messages = []
+
+    async def last_snapshot(self):
+        return self.snapshots[-1]
+
+    def subscribe(self, last_seen: int = 0):
+        async def generator():
+            for message in self.messages:
+                if message[0] > last_seen:
+                    self.last_seen = message[0]
+                    yield message[1]
+        return generator()
+
+
+class FakeMessageBus:
+    def __init__(self):
+        self._topics = {}
+
+    def topic(self, name: str):
+        if name not in self._topics:
+            self._topics[name] = FakeTopic()
+        return self._topics[name]
+
+
+@pytest.fixture
+def fake_message_bus():
+    backup = profed.core.message_bus._instance
+    profed.core.message_bus._instance = FakeMessageBus()
+
+    yield profed.core.message_bus._instance
+
+    profed.core.message_bus._instance = backup
+
+
+@pytest.fixture
+def fake_storage():
+    backup = storage._instance
+    storage._instance = Mock()
+    storage._instance.add = AsyncMock()
+    storage._instance.update = AsyncMock()
+    storage._instance.delete = AsyncMock()
+    storage._instance.fetch_actor_url = AsyncMock()
+
+    yield storage._instance
+
+    storage._instance = backup
+
+
+def with_events(events):
+    def with_events_wrapper(f):
+        @wraps(f)
+        async def call_with_events(*args, **kwargs):
+            profed.core.message_bus.message_bus().topic("users").messages = \
+                    [(n+1, e) for n, e in enumerate(events)]
+            return await f(*args, **kwargs)
+        return call_with_events
+    return with_events_wrapper
+
+
+
+@pytest.mark.asyncio
+@with_events([{"type": "created",
+               "payload": {
+                   "acct": "bob@example.com",
+                   "actor_url": "https://example.com/bob"}}])
+async def test_user_added_event(fake_storage, fake_message_bus):
+    await projections.webfinger_handle_user_events()
+
+    fake_storage.add.assert_awaited_with("bob@example.com",
+                                         "https://example.com/bob")
+
+
+@pytest.mark.asyncio
+@with_events([{"type": "updated",
+               "payload": {
+                   "acct": "bob@example.com",
+                   "actor_url": "https://example.com/bob_new"}}])
+async def test_user_event_processing_update_event(fake_storage, fake_message_bus):
+    await projections.webfinger_handle_user_events()
+
+    fake_storage.update.assert_awaited_once_with("bob@example.com",
+                                                 "https://example.com/bob_new")
+
+@pytest.mark.asyncio
+@with_events([{"type": "deleted",
+               "payload": {
+                   "acct": "bob@example.com"}}])
+async def test_user_event_processing_delete_event(fake_storage, fake_message_bus):
+    await projections.webfinger_handle_user_events()
+
+    fake_storage.delete.assert_awaited_once_with("bob@example.com",
+                                                 None)
+
+@pytest.mark.asyncio
+@with_events([{"type": "unknown_event",
+               "payload": {}}])
+async def test_user_event_processing_unknown_event(fake_storage, fake_message_bus):
+    await projections.webfinger_handle_user_events()
+
+    fake_storage.add.assert_not_awaited()
+    fake_storage.update.assert_not_awaited()
+    fake_storage.delete.assert_not_awaited()
+

@@ -52,7 +52,6 @@ async def test_add_user_already_exists(fake_pool):
     store = await storage.webfinger_storage()
     await store.add("alice@example.com", "https://example.com/alice")
 
-    # same as successful operation, conflict is handled in SQL
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
                                f"""
@@ -85,7 +84,6 @@ async def test_update_user_not_exists(fake_pool):
     store = await storage.webfinger_storage()
     await store.update("bob@example.com", "https://example.com/bob")
 
-    # same as successful operation, conflict is handled in SQL
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
                                f"""
@@ -116,7 +114,6 @@ async def test_delete_user_not_exists(fake_pool):
     store = await storage.webfinger_storage()
     await store.delete("bob@example.com", None)
 
-    # same as successful operation, conflict is handled in SQL
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
                                f"""

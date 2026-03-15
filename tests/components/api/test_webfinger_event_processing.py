@@ -51,9 +51,8 @@ def fake_storage():
     backup = storage._instance
     storage._instance = Mock()
     storage._instance.add = AsyncMock()
-    storage._instance.update = AsyncMock()
     storage._instance.delete = AsyncMock()
-    storage._instance.fetch_actor_url = AsyncMock()
+    storage._instance.user_exists = AsyncMock()
 
     yield storage._instance
 
@@ -74,65 +73,38 @@ def with_events(events):
 
 @pytest.mark.asyncio
 @with_events([{"type": "created",
-               "payload": {
-                   "acct": "bob@example.com",
-                   "actor_url": "https://example.com/bob"}}])
+               "payload": {"username": "bob"}}])
 async def test_user_added_event(fake_storage, fake_message_bus):
     await projections.webfinger_handle_user_events()
 
-    fake_storage.add.assert_awaited_with("bob@example.com",
-                                         "https://example.com/bob")
+    fake_storage.add.assert_awaited_with("bob")
 
-
-@pytest.mark.asyncio
-@with_events([{"type": "updated",
-               "payload": {
-                   "acct": "bob@example.com",
-                   "actor_url": "https://example.com/bob_new"}}])
-async def test_user_event_processing_update_event(fake_storage, fake_message_bus):
-    await projections.webfinger_handle_user_events()
-
-    fake_storage.update.assert_awaited_once_with("bob@example.com",
-                                                 "https://example.com/bob_new")
 
 @pytest.mark.asyncio
 @with_events([{"type": "deleted",
-               "payload": {
-                   "acct": "bob@example.com"}}])
+               "payload": {"username": "bob"}}])
 async def test_user_event_processing_delete_event(fake_storage, fake_message_bus):
     await projections.webfinger_handle_user_events()
 
-    fake_storage.delete.assert_awaited_once_with("bob@example.com",
-                                                 None)
+    fake_storage.delete.assert_awaited_once_with("bob")
 
 @pytest.mark.asyncio
-@with_events([{"type": "unknown_event",
-               "payload": {}}])
+@with_events([{"type": "unknown_event", "payload": {}}])
 async def test_user_event_processing_unknown_event(fake_storage, fake_message_bus):
     await projections.webfinger_handle_user_events()
 
     fake_storage.add.assert_not_awaited()
-    fake_storage.update.assert_not_awaited()
     fake_storage.delete.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-@with_events([{"type": "created",
-               "payload": {
-                   "acct": "bob@example.com",
-                   "actor_url": "https://example.com/bob"}},
-              {"type": "updated",
-               "payload": {
-                   "acct": "bob@example.com",
-                   "actor_url": "https://example.com/bob_new"}},
-              {"type": "deleted",
-               "payload": {
-                   "acct": "bob@example.com"}}])
+@with_events([{"type": "created", "payload": {"username": "bob"}},
+              {"type": "updated", "payload": {"username": "bob"}},
+              {"type": "deleted", "payload": {"username": "bob"}}])
 async def test_event_processing_multiple_messages(fake_storage, fake_message_bus):
     await projections.webfinger_handle_user_events()
 
     assert fake_storage.add.await_count == 1
-    assert fake_storage.update.await_count == 1
     assert fake_storage.delete.await_count == 1
 
 

@@ -11,9 +11,8 @@ from profed.components.api.projections import rebuild_webfinger_projection
 def fake_storage():
     store = Mock()
     store.add = AsyncMock()
-    store.update = AsyncMock()
     store.delete = AsyncMock()
-    store.fetch_actor_url = AsyncMock()
+    store.user_exists = AsyncMock()
     return store
 
 

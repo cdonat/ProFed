@@ -14,49 +14,38 @@ class _webfinger_storage:
         async with self._pool.acquire() as conn:
             await conn.execute(f"""
                                CREATE TABLE IF NOT EXISTS {self._schema_name}.webfinger_users (
-                                   acct TEXT PRIMARY KEY,
-                                   actor_url TEXT NOT NULL
+                                   username TEXT PRIMARY KEY
                                )
                                """)
 
-    async def fetch_actor_url(self, acct: str) -> str | None:
+    async def user_exists(self, username: str) -> str | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(f"""
-                                      SELECT actor_url
+                                      SELECT count(*) c
                                       FROM {self._schema_name}.webfinbger_users
-                                      WHERE ACCT = $1
+                                      WHERE username = $1
                                       """,
-                                      acct)
-            return row["actor_url"] if row else None
+                                      username)
+            return (row["c"] > 0)
 
 
-    async def add(self, acct: str, actor_url: str) -> None:
+    async def add(self, username: str) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(f"""
-                               INSERT INTO {self._schema_name}.webfinger_users (acct, actor_url)
-                               VALUES ($1, $2)
-                               ON CONFLICT (acct) DO NOTHING
+                               INSERT INTO {self._schema_name}.webfinger_users (username)
+                               VALUES ($1)
+                               ON CONFLICT (username) DO NOTHING
                                """,
-                               acct,
-                               actor_url)
+                               username)
 
-    async def update(self, acct: str, actor_url: str) -> None:
-        async with self._pool.acquire() as conn:
-            await conn.execute(f"""
-                               UPDATE {self._schema_name}.webfinger_users
-                               SET actor_url = $2
-                               WHERE acct = $1
-                               """,
-                               acct,
-                               actor_url)
 
-    async def delete(self, acct: str, _) -> None:
+    async def delete(self, username: str) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(f"""
                                DELETE FROM {self._schema_name}.webfinger_users
                                WHERE acct = $1
                                """,
-                               acct)
+                               username)
 
 
 _instance: _webfinger_storage | None = None

@@ -34,71 +34,37 @@ def fake_pool(fake_conn):
 @pytest.mark.asyncio
 async def test_add_user_success(fake_pool):
     store = await storage.webfinger_storage()
-    await store.add("alice@example.com", "https://example.com/alice")
+    await store.add("alice")
 
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
                                f"""
-                               INSERT INTO {store._schema_name}.webfinger_users (acct, actor_url)
-                               VALUES ($1, $2)
-                               ON CONFLICT (acct) DO NOTHING
+                               INSERT INTO {store._schema_name}.webfinger_users (username)
+                               VALUES ($1)
+                               ON CONFLICT (username) DO NOTHING
                                """,
-                               "alice@example.com",
-                               "https://example.com/alice")
+                               "alice")
 
 
 @pytest.mark.asyncio
 async def test_add_user_already_exists(fake_pool):
     store = await storage.webfinger_storage()
-    await store.add("alice@example.com", "https://example.com/alice")
+    await store.add("alice")
 
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
                                f"""
-                               INSERT INTO {store._schema_name}.webfinger_users (acct, actor_url)
-                               VALUES ($1, $2)
-                               ON CONFLICT (acct) DO NOTHING
+                               INSERT INTO {store._schema_name}.webfinger_users (username)
+                               VALUES ($1)
+                               ON CONFLICT (username) DO NOTHING
                                """,
-                               "alice@example.com",
-                               "https://example.com/alice")
-
-
-@pytest.mark.asyncio
-async def test_update_user_success(fake_pool):
-    store = await storage.webfinger_storage()
-    await store.update("alice@example.com", "https://example.com/alice_new")
-
-    async with fake_pool.acquire() as conn:
-        conn.execute.assert_awaited_with(
-                               f"""
-                               UPDATE {store._schema_name}.webfinger_users
-                               SET actor_url = $2
-                               WHERE acct = $1
-                               """,
-                               "alice@example.com",
-                               "https://example.com/alice_new")
-
-
-@pytest.mark.asyncio
-async def test_update_user_not_exists(fake_pool):
-    store = await storage.webfinger_storage()
-    await store.update("bob@example.com", "https://example.com/bob")
-
-    async with fake_pool.acquire() as conn:
-        conn.execute.assert_awaited_with(
-                               f"""
-                               UPDATE {store._schema_name}.webfinger_users
-                               SET actor_url = $2
-                               WHERE acct = $1
-                               """,
-                               "bob@example.com",
-                               "https://example.com/bob")
+                               "alice")
 
 
 @pytest.mark.asyncio
 async def test_delete_user_success(fake_pool):
     store = await storage.webfinger_storage()
-    await store.delete("alice@example.com", None)
+    await store.delete("alice")
 
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
@@ -106,13 +72,13 @@ async def test_delete_user_success(fake_pool):
                                DELETE FROM {store._schema_name}.webfinger_users
                                WHERE acct = $1
                                """,
-                               "alice@example.com")
+                               "alice")
 
 
 @pytest.mark.asyncio
 async def test_delete_user_not_exists(fake_pool):
     store = await storage.webfinger_storage()
-    await store.delete("bob@example.com", None)
+    await store.delete("bob")
 
     async with fake_pool.acquire() as conn:
         conn.execute.assert_awaited_with(
@@ -120,29 +86,23 @@ async def test_delete_user_not_exists(fake_pool):
                                DELETE FROM {store._schema_name}.webfinger_users
                                WHERE acct = $1
                                """,
-                               "bob@example.com")
+                               "bob")
 
 
 @pytest.mark.asyncio
-async def test_fetch_actor_url_found(fake_pool):
+async def test_user_exists_found(fake_pool):
     async with fake_pool.acquire() as conn:
-        conn.fetchrow.return_value = {"actor_url": "https://example.com/alice"}
-
+        conn.fetchrow.return_value = {"c": 1}
         store = await storage.webfinger_storage()
-        result = await store.fetch_actor_url("alice@example.com")
-
-        assert result == "https://example.com/alice"
+        assert await store.user_exists("alice@example.com")
 
 
 @pytest.mark.asyncio
-async def test_fetch_actor_url_not_found(fake_pool):
+async def test_user_exists_not_found(fake_pool):
     async with fake_pool.acquire() as conn:
-        conn.fetchrow.return_value = None
-
+        conn.fetchrow.return_value = {"c": 0}
         store = await storage.webfinger_storage()
-        result = await store.fetch_actor_url("unknown@example.com")
-
-        assert result is None
+        assert not await store.user_exists("alice@example.com")
 
 
 @pytest.mark.asyncio

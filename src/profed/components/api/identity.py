@@ -18,4 +18,3 @@ def actor_url_from_username(username: str) -> str:
 def username_from_acct(acct: str) -> str:
     return acct.split("@", 1)[0]
 
-

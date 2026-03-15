@@ -12,5 +12,3 @@ async def resolve_actor_url(acct: str):
         return actor_url_from_username(username)
     return None
 
-
-

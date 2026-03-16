@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Christof Donat
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from typing import Dict
+from typing import Dict, Optional
 from asyncpg import Pool, create_pool
 
 
@@ -37,7 +37,7 @@ class _storage:
                                   WHERE username = $1""",
                                username)
 
-    async def fetch(self, username: str):
+    async def fetch(self, username: str) -> Optional[Dict]:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow("""SELECT payload
                                          FROM {self._schema_name}.actor

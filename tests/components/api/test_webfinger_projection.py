@@ -4,55 +4,85 @@
 import pytest
 from functools import wraps
 from unittest.mock import AsyncMock, Mock
+
+from profed.core import message_bus
+
+from profed.components.api.storage import webfinger as storage
 from profed.components.api.projections.webfinger import rebuild
+
+
+class FakeTopic:
+    def __init__(self):
+        self.last_seen = 0
+        self.snapshots = []
+        self.messages = []
+
+    async def last_snapshot(self):
+        return self.snapshots[-1] if len(self.snapshots) > 0 else (None, [])
+
+    def subscribe(self, last_seen: int = 0):
+        async def generator():
+            for message in self.messages:
+                if message[0] > last_seen:
+                    self.last_seen = message[0]
+                    yield message[1]
+        return generator()
+
+
+class FakeMessageBus:
+    def __init__(self):
+        self._topics = {}
+
+    def topic(self, name: str):
+        if name not in self._topics:
+            self._topics[name] = FakeTopic()
+        return self._topics[name]
+
+
+@pytest.fixture
+def fake_message_bus():
+    backup = message_bus._instance
+    message_bus._instance = FakeMessageBus()
+
+    yield message_bus._instance
+
+    message_bus._instance = backup
 
 
 @pytest.fixture
 def fake_storage():
-    store = Mock()
-    store.add = AsyncMock()
-    store.delete = AsyncMock()
-    store.user_exists = AsyncMock()
-    return store
+    backup = storage._instance
+    storage._instance = AsyncMock()
+    storage._instance.add = AsyncMock()
+    storage._instance.delete = AsyncMock()
+    storage._instance.user_exists = AsyncMock()
 
+    yield storage._instance
 
-def with_snapshot(last_seen, snapshot):
-    def with_snapshot_wrapper(f):
-        @wraps(f)
-        async def call_with_snapshot(*args, **kwargs):
-            fake_bus = Mock()
-
-            async def fake_last_snapshot():
-                return (last_seen, snapshot)
-
-            fake_bus.topic.return_value.last_snapshot = fake_last_snapshot
-
-            return f(*args, **kwargs)
-        return call_with_snapshot
-    return with_snapshot_wrapper
+    storage._instance = backup
 
 
 @pytest.mark.asyncio
-@with_snapshot(42,
-               [{"acct": "alice@example.com",
-                 "actor_url": "https://example.com/alice"}])
-async def test_rebuild_success(fake_storage):
+async def test_rebuild_success(fake_message_bus, fake_storage):
+    fake_message_bus.topic("users").snapshots = [
+                (42, [{"username": "alice"}])
+            ]
     await rebuild()
-    fake_storage.add.assert_awaited_once_with("alice@example.com", "https://example.com/alice")
+    fake_storage.add.assert_awaited_once_with("alice")
 
 
 @pytest.mark.asyncio
-@with_snapshot(None, [])
-async def test_rebuild_no_snapshot(fake_storage):
+async def test_rebuild_no_snapshot(fake_message_bus, fake_storage):
+    fake_message_bus.topic("users").snapshots = [(None, [])]
     await rebuild()
     fake_storage.add.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-@with_snapshot(42,
-               [{"acct": "alice@example.com",
-                 "actor_url": "https://example.com/alice"}])
-async def test_rebuild_add_failure(fake_storage):
+async def test_rebuild_add_failure(fake_message_bus, fake_storage):
+    fake_message_bus.topic("users").snapshots = [
+                (42, [{"username": "alice"}])
+            ]
     fake_storage.add.side_effect = RuntimeError("DB error")
 
     with pytest.raises(RuntimeError, match="DB error"):
@@ -60,31 +90,32 @@ async def test_rebuild_add_failure(fake_storage):
 
 
 @pytest.mark.asyncio
-@with_snapshot(10,
-               [{"acct": "alice@example.com",
-                 "actor_url": "https://example.com/alice"},
-                {"acct": "bob@example.com",
-                 "actor_url": "https://example.com/bob"}])
-async def test_projection_multiple_users(fake_storage):
+async def test_projection_multiple_users(fake_message_bus, fake_storage):
+    fake_message_bus.topic("users").snapshots = [
+                (10, [{"username": "alice"},
+                      {"username": "bob"}])
+            ]
     await rebuild()
     assert fake_storage.add.await_count == 2
 
 
 @pytest.mark.asyncio
-@with_snapshot(5, [{"acct": "alice@example.com"}])
-async def test_projection_invalid_payload(fake_storage):
+async def test_projection_invalid_payload(fake_message_bus, fake_storage):
+    fake_message_bus.topic("users").snapshots = [
+            (5, [{"no_username": "alice"}])
+            ]
     await rebuild()
     assert fake_storage.add.await_count == 0
 
 
 @pytest.mark.asyncio
-@with_snapshot(10,
-               [{"acct": "alice@example.com",
-                 "actor_url": "https://example.com/alice"},
-                {"acct": "bob@example.com",
-                 "actor_url": "https://example.com/bob"},
-                {"acct": "alice@example.com"}])
-async def test_projection_multiple_users_one_malformed(fake_storage):
+async def test_projection_multiple_users_one_malformed(fake_message_bus, fake_storage):
+    fake_message_bus.topic("users").snapshots = [
+            (10,
+             [{"username": "alice"},
+              {"username": ""},
+              {"no_username": "alice"}])
+            ]
     await rebuild()
     assert fake_storage.add.await_count == 2
 

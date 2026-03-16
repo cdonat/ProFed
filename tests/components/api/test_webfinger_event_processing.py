@@ -6,7 +6,7 @@ from functools import wraps
 from unittest.mock import AsyncMock, Mock
 from profed.components.api.storage import webfinger as storage
 from profed.components.api.projections import webfinger as projections
-import profed.core.message_bus
+from profed.core import message_bus
 
 
 class FakeTopic:
@@ -16,7 +16,7 @@ class FakeTopic:
         self.messages = []
 
     async def last_snapshot(self):
-        return self.snapshots[-1]
+        return self.snapshots[-1] if len(self.snapshots) > 0 else (None, [])
 
     def subscribe(self, last_seen: int = 0):
         async def generator():
@@ -39,12 +39,12 @@ class FakeMessageBus:
 
 @pytest.fixture
 def fake_message_bus():
-    backup = profed.core.message_bus._instance
-    profed.core.message_bus._instance = FakeMessageBus()
+    backup = message_bus._instance
+    message_bus._instance = FakeMessageBus()
 
-    yield profed.core.message_bus._instance
+    yield message_bus._instance
 
-    profed.core.message_bus._instance = backup
+    message_bus._instance = backup
 
 
 @pytest.fixture
@@ -64,12 +64,11 @@ def with_events(events):
     def with_events_wrapper(f):
         @wraps(f)
         async def call_with_events(*args, **kwargs):
-            profed.core.message_bus.message_bus().topic("users").messages = \
+            message_bus.message_bus().topic("users").messages = \
                     [(n+1, e) for n, e in enumerate(events)]
             return await f(*args, **kwargs)
         return call_with_events
     return with_events_wrapper
-
 
 
 @pytest.mark.asyncio

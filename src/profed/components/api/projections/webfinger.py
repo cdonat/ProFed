@@ -31,7 +31,8 @@ async def rebuild() -> None:
     wf_storage = await storage()
     await wf_storage.ensure_table()
     
-    last_seen, users = message_bus().topic("users").last_snapshot()
+    last_seen, users = await message_bus().topic("users").last_snapshot()
     for u in users:
-        await wf_storage.add(u["username"])
+        if "username" in u:
+            await wf_storage.add(u["username"])
 

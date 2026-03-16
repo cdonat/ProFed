@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from profed.core.message_bus import message_bus
-from profed.components.api.storage import webfinger_storage
+from profed.components.api.storage.webfinger import webfinger_storage
 
 
 last_seen = 0

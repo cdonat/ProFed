@@ -4,7 +4,8 @@
 import pytest
 from functools import wraps
 from unittest.mock import AsyncMock, Mock
-from profed.components.api import projections, storage
+from profed.components.api.storage import webfinger as storage
+from profed.components.api import projections
 import profed.core.message_bus
 
 

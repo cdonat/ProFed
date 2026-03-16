@@ -5,7 +5,7 @@ from threading import Thread
 import asyncio
 import asyncpg
 from .app import create_app
-from .storage import init_webfinger_storage, webfinger_storage
+from .storage.webfinger import init_webfinger_storage, webfinger_storage
 from .projections import rebuild_webfinger_projection, webfinger_handle_user_events
 
 

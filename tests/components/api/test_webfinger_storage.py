@@ -3,7 +3,7 @@
 
 import pytest
 from unittest.mock import AsyncMock, Mock
-from profed.components.api import storage
+from profed.components.api.storage import webfinger as storage
 
 @pytest.fixture
 def fake_conn():

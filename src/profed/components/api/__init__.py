@@ -5,8 +5,18 @@ from threading import Thread
 import asyncio
 import asyncpg
 from .app import create_app
-from .storage import webfinger as webfinger_storage
-from .projections import webfinger as webfinger_projections
+from .storage import (
+        webfinger as webfinger_storage,
+        actor as actor_storage,
+        # inbox as inbox_storage,
+        # outbox as outbox_storage
+        )
+from .projections import (
+        webfinger as webfinger_projections,
+        actor as actor_projections,
+        # inbox as inbox_projections,
+        # outbox as outbox_projections
+        )
 
 
 async def _init_well_known_router(component_name: str, config):
@@ -15,6 +25,14 @@ async def _init_well_known_router(component_name: str, config):
     await webfinger_projections.rebuild()
 
     asyncio.create_task(webfinger_projections.handle_user_events)
+
+
+async def _init_actor_router(component_name: str, config):
+    await actor_storage.init(component_name, config)
+    await (await actor_storage.storage()).ensure_table()
+    await actor_projections.rebuild()
+     
+    asyncio.create_task(actor_projections.handle_user_events)
 
 
 async def _reset_component_schema(component_name: str, config):
@@ -34,9 +52,9 @@ async def init(component_name: str, config):
     deactive_routers = config.get("deactive_routers", "").split()
     init_routers = [ini
                     for name, ini in (("well_known", _init_well_known_router),
-                                       # ("actor", init_actor_router),
-                                       # ("inbox", init_inbox_router),
-                                       # ("outbox", init_outbox_router),
+                                      ("actor", _init_actor_router),
+                                       # ("inbox", _init_inbox_router),
+                                       # ("outbox", _init_outbox_router),
                                        )
                     if name not in deactive_routers]
     

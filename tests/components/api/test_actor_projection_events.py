@@ -145,8 +145,12 @@ async def test_handle_user_events_skips_messages_before_last_seen(fake_storage, 
 @pytest.mark.asyncio
 @with_events([{"type": "created"}])
 async def test_handle_user_events_missing_payload(fake_storage, fake_message_bus):
-    with pytest.raises(KeyError):
-        await projections.handle_user_events()
+    await projections.handle_user_events()
+
+    fake_storage.add.assert_not_awaited()
+    fake_storage.update.assert_not_awaited()
+    fake_storage.delete.assert_not_awaited()
+
 
 
 @pytest.mark.asyncio
@@ -155,6 +159,9 @@ async def test_handle_user_events_missing_payload(fake_storage, fake_message_bus
                   # missing username
                   "name": "Alice"}}])
 async def test_handle_user_events_malformed_payload_raises(fake_storage, fake_message_bus):
-    with pytest.raises(KeyError):
-        await projections.handle_user_events()
+    await projections.handle_user_events()
+
+    fake_storage.add.assert_not_awaited()
+    fake_storage.update.assert_not_awaited()
+    fake_storage.delete.assert_not_awaited()
 

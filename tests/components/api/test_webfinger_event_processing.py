@@ -111,13 +111,17 @@ async def test_event_processing_multiple_messages(fake_storage, fake_message_bus
 @pytest.mark.asyncio
 @with_events([{"type": "created"}])
 async def test_event_processing_invalid_message(fake_storage, fake_message_bus):
-    with pytest.raises(KeyError):
-        await projections.handle_user_events()
+    await projections.handle_user_events()
+
+    fake_storage.add.assert_not_awaited()
+    fake_storage.delete.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 @with_events([{"type": "created", "payload": {}}])
 async def test_event_processing_malformed_payload_raises(fake_storage, fake_message_bus):
-    with pytest.raises(KeyError):
-        await projections.handle_user_events()
+    await projections.handle_user_events()
+
+    fake_storage.add.assert_not_awaited()
+    fake_storage.delete.assert_not_awaited()
 

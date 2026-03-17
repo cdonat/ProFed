@@ -15,9 +15,9 @@ async def _unknown_message_type(_1, _2):
 async def handle_user_events() -> None:
     global last_seen
 
-    act_storage = await storage() 
+    act_storage = await storage()
 
-    async for event in message_bus().topic("users").subscribe():
+    async for event in message_bus().topic("users").subscribe(last_seen):
         event_type = event.get("type")
         data = event["payload"]
 
@@ -26,7 +26,7 @@ async def handle_user_events() -> None:
                "deleted": act_storage.delete}.get(
                        event_type,
                        _unknown_message_type)(
-                               data.get("username", None),
+                               data["username"],
                                data)
 
 

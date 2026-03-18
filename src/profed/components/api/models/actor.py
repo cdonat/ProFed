@@ -4,7 +4,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
-
+from .activity_streams import ActivityStreamsObject
 
 class Resume(BaseModel):
 
@@ -16,22 +16,21 @@ class Resume(BaseModel):
     projects: List[Dict[str, Any]] = []
 
 
-class Actor(BaseModel):
-
-    model_config = ConfigDict(extra="allow")
-
-    context: list = Field(
-        default=[
-            "https://www.w3.org/ns/activitystreams",
+class Actor(ActivityStreamsObject):
+    @classmethod
+    def default_context(cls) -> list[str | dict[str, str]]:
+        return super().default_context() + [
             {
                 "profed": "https://profed.social/ns#",
-                "resume": "profed:resume"
+                "resume": "profed:resume",
             }
-        ],
-        alias="@context"
+        ]
+
+    context: list[str | dict[str, str]] = Field(
+        default_factory=lambda: Actor.default_context(),
+        alias="@context",
     )
 
-    id: str
     type: str = "Person"
     preferredUsername: str
 

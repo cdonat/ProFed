@@ -6,7 +6,6 @@ from functools import wraps
 from unittest.mock import AsyncMock, Mock
 from profed.core import message_bus
 from profed.components.api.storage import actor as storage
-
 from profed.components.api.projections import actor as projections
 
 
@@ -17,7 +16,7 @@ class FakeTopic:
         self.messages = []
 
     async def last_snapshot(self):
-        return self.snapshots[-1] if len(self.snapshots) > 0 else (None, [])
+        return self.snapshots[-1] if len(self.snapshots) > 0 else (0, [])
 
     def subscribe(self, last_seen: int = 0):
         async def generator():

@@ -51,6 +51,7 @@ def _payload_content(payload, ignore) -> Optional[Dict]:
     typ = payload["type"]
     if not isinstance(typ, str) or typ == "":
         logger.warning(ignore(f"invalid payload type: {typ!r}"))
+        return None
 
     return payload
 

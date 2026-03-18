@@ -8,6 +8,10 @@ from profed.components.api.storage.outbox import storage
 
 async def resolve_outbox(username: str) -> OrderedCollection:
     obx_storage = await storage()
-    return OrderedCollection(id=f"{actor_url_from_username(username)}/outbox",
-                             totalItems=0,
-                             orderedItems=await obx_storage.fetch(username))
+    activities = await obx_storage.fetch(username)
+
+    return (OrderedCollection(id=f"{actor_url_from_username(username)}/outbox",
+                              totalItems=0,
+                              orderedItems=activities)
+            if activities is not None else
+            None)

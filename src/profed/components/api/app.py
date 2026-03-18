@@ -6,7 +6,7 @@ from .routers import (
         well_known,
         actor,
         # inbox,
-        # outbox
+        outbox
         )
 
 def create_app(config):
@@ -18,7 +18,7 @@ def create_app(config):
                     for name, rt in (("well_known", well_known.router),
                                      ("actor", actor.router),
                                      # ("inbox", inbox.router),
-                                     # ("outbox", outbox.router),
+                                     ("outbox", outbox.router),
                                      )
                     if name not in deactive_routers]
     

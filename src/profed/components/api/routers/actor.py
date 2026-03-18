@@ -2,16 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from fastapi import APIRouter, HTTPException, Path
-from fastapi.responses import JSONResponse
 from profed.components.api.services.actor import resolve_actor
 from profed.components.api.models.actor import Actor
-
+from profed.components.api.http import ActivityPubJSONResponse
 
 router = APIRouter()
-
-
-class ActivityPubJSONResponse(JSONResponse):
-    media_type = "application/activity+json"
 
 
 @router.get("/actors/{username}",

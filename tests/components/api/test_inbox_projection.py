@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 from profed.core import message_bus
 
-from profed.components.api.storage import webfinger_users as storage
-from profed.components.api.projections.webfinger import rebuild, reset_last_seen
+from profed.components.api.storage import inbox_users as storage
+from profed.components.api.projections.inbox import rebuild, reset_last_seen
 
 
 class FakeTopic:
